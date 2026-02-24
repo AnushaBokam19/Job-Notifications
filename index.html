@@ -16,61 +16,61 @@
     .muted { color: rgba(17,17,17,0.6); }
     pre { margin:0; font-family: monospace; font-size:13px; }
     .card-title { margin: 0 0 var(--space-sm); font-family: var(--font-heading); font-size: 20px; }
+
+    /* Shared navigation styles (minimal, matches design) */
+    :root { --bg: #F7F6F3; --accent: #8B0000; --max-text-width: 720px; }
+    body { background: var(--bg); }
+    .nav-row { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 20px; max-width:980px; margin:0 auto 8px; }
+    nav.primary { display:flex; gap:18px; align-items:center; }
+    nav.primary a { text-decoration:none; color:inherit; padding:6px 0; border-bottom:3px solid transparent; font-weight:600; }
+    nav.primary a[aria-current="page"] { border-bottom-color: var(--accent); }
+    .menu-toggle { display:none; background:transparent; border:1px solid rgba(0,0,0,0.06); padding:6px; border-radius:6px; }
+    .menu-panel { display:none; position:absolute; right:10px; top:64px; background:#fff; border:1px solid rgba(0,0,0,0.06); border-radius:8px; padding:12px; min-width:160px; }
+    .menu-panel a { display:block; padding:8px 10px; color:#111; text-decoration:none; border-bottom:3px solid transparent; }
+    .menu-panel a[aria-current="page"] { border-bottom-color: var(--accent); }
+    @media (max-width:720px){ nav.primary{display:none} .menu-toggle{display:inline-flex} }
   </style>
 </head>
 <body>
-  <div class="topbar container" role="banner">
+  <div class="nav-row" role="navigation" aria-label="Primary navigation">
+    <div class="brand">Job Notification App</div>
+    <nav class="primary" role="navigation" aria-label="Main">
+      <!-- <a href="index.html" id="link-home" aria-current="page">Home</a> -->
+      <a href="dashboard.html" id="link-dashboard">Dashboard</a>
+      <a href="saved.html" id="link-saved">Saved</a>
+      <a href="digest.html" id="link-digest">Digest</a>
+      <a href="settings.html" id="link-settings">Settings</a>
+      <a href="proof.html" id="link-proof">Proof</a>
+    </nav>
+    <div style="position:relative;">
+      <button class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="mobileMenu">☰</button>
+      <div class="menu-panel" id="mobileMenu" role="menu" aria-hidden="true">
+        <!-- <a href="index.html" role="menuitem">Home</a> -->
+        <a href="dashboard.html" role="menuitem">Dashboard</a>
+        <a href="saved.html" role="menuitem">Saved</a>
+        <a href="digest.html" role="menuitem">Digest</a>
+        <a href="settings.html" role="menuitem">Settings</a>
+        <a href="proof.html" role="menuitem">Proof</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- <div class="topbar container" role="banner">
     <div class="app-name">Job Notification App</div>
     <div class="progress muted">Step 2 / 5</div>
     <div class="status-badge status-pill">In Progress</div>
-  </div>
+  </div> -->
 
-  <header class="context-header container" role="region" aria-label="Context header">
-    <h1 class="text-max">Configure your job notifications</h1>
-    <p class="text-max muted">Choose triggers, channels, and cadence for the jobs you care about. This configuration controls notifications sent to your devices.</p>
-  </header>
-
-    <main class="workspace container" role="main">
+  <main class="workspace container" role="main">
     <section class="primary">
-      <div class="card stack">
-        <div>
-          <h2 class="card-title">Notification rules</h2>
-          <p class="muted text-max">Create rules to receive concise updates when matching jobs are posted.</p>
+      <div class="page" style="max-width:720px; margin:40px auto; text-align:left; padding:48px 20px;">
+        <h1 style="font-family: Georgia, 'Times New Roman', Times, serif; font-size:48px; margin:0 0 12px;">Stop Missing The Right Jobs.</h1>
+        <p class="muted" style="margin:0 0 20px; font-size:18px;">Precision-matched job discovery delivered daily at 9AM.</p>
+        <div style="margin-top:24px;">
+          <a href="settings.html" style="background:var(--accent); color:white; padding:12px 18px; border-radius:8px; text-decoration:none; font-weight:600; display:inline-block;">Start Tracking</a>
         </div>
-
-        <div>
-          <label for="rule-name" class="muted">Rule name</label>
-          <input id="rule-name" class="input" placeholder="e.g. Remote Backend Roles" />
-        </div>
-
-        <div style="display:flex;gap:var(--space-sm)">
-          <button class="btn btn-primary">Save rule</button>
-          <button class="btn btn-secondary">Cancel</button>
-        </div>
-      </div>
-
-      <div style="height: var(--space-lg)"></div>
-
-      <div class="card">
-        <h3 style="margin-top:0">Existing rules</h3>
-        <div class="muted">No rules yet — create your first rule to get started.</div>
       </div>
     </section>
-
-    <aside class="secondary">
-      <div class="card">
-        <h4 style="margin-top:0">Step explanation</h4>
-        <p class="muted">This step gathers the primary filter terms used to match job postings.</p>
-      </div>
-
-      <div style="height: var(--space-sm)"></div>
-
-      <div class="card">
-        <h4 style="margin-top:0">Copyable prompt</h4>
-        <div class="prompt-box" id="prompt">Find remote backend engineer roles with 5+ years experience in Node.js.</div>
-        <button class="btn btn-secondary copy-btn" onclick="copyPrompt()">Copy</button>
-      </div>
-    </aside>
   </main>
 
   <footer class="proof-footer container" role="contentinfo">
@@ -91,6 +91,28 @@
         alert('Copy failed');
       });
     }
+
+    (function(){
+      const menuToggle = document.getElementById('menuToggle');
+      const mobileMenu = document.getElementById('mobileMenu');
+      function open(){ mobileMenu.style.display='block'; mobileMenu.setAttribute('aria-hidden','false'); menuToggle.setAttribute('aria-expanded','true'); }
+      function close(){ mobileMenu.style.display='none'; mobileMenu.setAttribute('aria-hidden','true'); menuToggle.setAttribute('aria-expanded','false'); }
+      menuToggle?.addEventListener('click', e=>{ e.stopPropagation(); if (menuToggle.getAttribute('aria-expanded')==='true') close(); else open(); });
+      document.addEventListener('click', e=>{ if (mobileMenu && !mobileMenu.contains(e.target) && e.target !== menuToggle) close(); });
+
+      // Prevent reload/flicker when clicking the already-active link
+      document.addEventListener('click', function(e){
+        const a = e.target.closest('a[href]');
+        if (!a) return;
+        try {
+          const linkUrl = new URL(a.href, location.href);
+          if (linkUrl.pathname === location.pathname || linkUrl.pathname === (location.pathname.replace(/\\/g,'/'))) {
+            e.preventDefault();
+            close();
+          }
+        } catch (err) { /* ignore */ }
+      });
+    })();
   </script>
 </body>
 </html>
