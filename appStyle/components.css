@@ -1,0 +1,304 @@
+:root { --_btn-padding: 10px 14px; }
+
+/* Top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-top: var(--space-sm);
+  padding-bottom: var(--space-sm);
+}
+.topbar .app-name {
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+.topbar .progress {
+  text-align: center;
+  flex: 1 1 auto;
+}
+.status-badge {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 6px 10px;
+  border-radius: calc(var(--radius) * 1);
+  font-size: 13px;
+}
+
+/* Context header */
+.context-header {
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-md);
+}
+.context-header h1 {
+  margin: 0 0 var(--space-sm);
+  font-family: var(--font-heading);
+  font-size: 40px;
+  line-height: 1.15;
+  font-weight: 600;
+}
+.context-header p { margin: 0; }
+
+/* Workspace layout: primary (70%) + secondary (30%) */
+.workspace {
+  display: grid;
+  grid-template-columns: 70% 30%;
+  gap: var(--space-lg);
+  align-items: start;
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-lg);
+}
+.primary, .secondary { min-width: 0; } /* allow truncation */
+
+/* Cards */
+.card {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  padding: var(--space-md);
+  border-radius: var(--radius);
+}
+.card h2, .card h3, .card h4 { margin-top: 0; font-family: var(--font-heading); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--_btn-padding);
+  gap: 8px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-duration) var(--transition-easing), border-color var(--transition-duration) var(--transition-easing), color var(--transition-duration) var(--transition-easing);
+  border: 1px solid transparent;
+  font-size: 15px;
+}
+.btn:focus { outline: 3px solid rgba(139,0,0,0.12); outline-offset: 2px; }
+
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  border-color: var(--color-accent);
+}
+.btn-primary:hover { background: darken(var(--color-accent), 5%); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.btn-secondary:hover {
+  background: rgba(139,0,0,0.04);
+}
+
+/* Inputs */
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 15px;
+  transition: border-color var(--transition-duration) var(--transition-easing), box-shadow var(--transition-duration) var(--transition-easing);
+  background: white;
+  color: var(--color-text);
+}
+.input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(139,0,0,0.06);
+  outline: none;
+}
+
+/* Prompt box */
+.prompt-box {
+  padding: var(--space-sm);
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: calc(var(--radius) - 2px);
+  font-family: monospace;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+/* Proof footer */
+.proof-footer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.proof-footer li::before { content: "•"; margin-right: 8px; color: var(--color-muted); }
+
+/* Small helpers */
+.stack > * + * { margin-top: var(--space-md); }
+.status-pill { font-size: 13px; padding: 6px 10px; border-radius: 6px; }
+
+/* Accessibility and motion */
+@media (prefers-reduced-motion: reduce) {
+  .btn, .input { transition: none; }
+}
+
+/* NOTE: keep styles minimal and intentional — no shadows, no gradients, no noisy animations. */
+
+/* Base component styles — Job Notification App
+   Consistent, predictable, minimal visual language.
+*/
+@import "./variables.css";
+
+/* Page background & base type */
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Top Bar */
+.topbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding: var(--space-sm);
+  border-bottom: var(--border-subtle);
+  gap: var(--space-sm);
+}
+.topbar .app-name {
+  font-weight:700;
+  letter-spacing:0.2px;
+}
+.topbar .progress {
+  font-size:14px;
+  color: rgba(17,17,17,0.7);
+}
+.topbar .status-badge {
+  padding: 6px 10px;
+  border-radius: calc(var(--radius) / 1.25);
+  border: 1px solid rgba(17,17,17,0.06);
+  font-size:13px;
+}
+
+/* Context Header */
+.context-header {
+  padding: var(--space-lg) var(--space-lg) 0 var(--space-lg);
+}
+.context-header h1 {
+  margin: 0 0 var(--space-sm) 0;
+  font-family: var(--font-heading);
+  font-size: 40px;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+.context-header p {
+  margin: 0;
+  color: rgba(17,17,17,0.7);
+  max-width: var(--max-text-width);
+}
+
+/* Two-column workspace (70/30) */
+.workspace {
+  display:flex;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+}
+.primary {
+  flex: 0 0 70%;
+}
+.secondary {
+  flex: 0 0 30%;
+}
+
+/* Cards */
+.card {
+  background: white;
+  border: var(--border-subtle);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  box-sizing: border-box;
+}
+
+/* Buttons */
+.btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-weight:600;
+  cursor:pointer;
+  transition: background var(--transition-duration) var(--transition-easing), border var(--transition-duration) var(--transition-easing), color var(--transition-duration) var(--transition-easing);
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+}
+.btn-primary:focus {
+  outline: 3px solid rgba(139,0,0,0.12);
+  outline-offset: 2px;
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid rgba(17,17,17,0.12);
+}
+.btn-secondary:focus {
+  outline: 3px solid rgba(17,17,17,0.06);
+  outline-offset: 2px;
+}
+
+/* Inputs */
+.input {
+  width:100%;
+  padding: 10px 12px;
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid rgba(17,17,17,0.12);
+  background: #fff;
+  transition: border var(--transition-duration) var(--transition-easing), box-shadow var(--transition-duration) var(--transition-easing);
+  font-size: var(--font-size-body);
+}
+.input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(139,0,0,0.06);
+  outline: none;
+}
+
+/* Copyable prompt box (secondary panel element) */
+.prompt-box {
+  font-family: var(--font-body);
+  font-size: 14px;
+  background: #fff;
+  border: var(--border-subtle);
+  padding: var(--space-md);
+  border-radius: var(--radius);
+  white-space:pre-wrap;
+}
+.prompt-box .copy-btn {
+  margin-top: var(--space-sm);
+}
+
+/* Proof footer (checklist) */
+.proof-footer {
+  padding: var(--space-md);
+  border-top: var(--border-subtle);
+  display:flex;
+  gap: var(--space-md);
+  align-items:center;
+  justify-content: flex-start;
+}
+.proof-footer ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.proof-footer li {
+  margin-bottom: 6px;
+}
+
+/* Cards, inputs, buttons reuse same radius; minimal visual noise */
+

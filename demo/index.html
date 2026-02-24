@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Design System Demo — Job Notification App</title>
+  <link rel="stylesheet" href="../appStyle/variables.css">
+  <link rel="stylesheet" href="../appStyle/components.css">
+  <style>
+    /* Demo-specific layout helpers (use tokens only) */
+    .topbar .app-name { font-size: 18px; font-weight:600; }
+    .workspace { align-items:flex-start; }
+    .primary .stack > * + * { margin-top: var(--space-md); }
+    .secondary .stack > * + * { margin-top: var(--space-md); }
+    .status-pill { font-size:13px; padding:6px 10px; border-radius:6px; }
+    .muted { color: rgba(17,17,17,0.6); }
+    pre { margin:0; font-family: monospace; font-size:13px; }
+    .card-title { margin: 0 0 var(--space-sm); font-family: var(--font-heading); font-size: 20px; }
+  </style>
+</head>
+<body>
+  <div class="topbar container" role="banner">
+    <div class="app-name">Job Notification App</div>
+    <div class="progress muted">Step 2 / 5</div>
+    <div class="status-badge status-pill">In Progress</div>
+  </div>
+
+  <header class="context-header container" role="region" aria-label="Context header">
+    <h1 class="text-max">Configure your job notifications</h1>
+    <p class="text-max muted">Choose triggers, channels, and cadence for the jobs you care about. This configuration controls notifications sent to your devices.</p>
+  </header>
+
+    <main class="workspace container" role="main">
+    <section class="primary">
+      <div class="card stack">
+        <div>
+          <h2 class="card-title">Notification rules</h2>
+          <p class="muted text-max">Create rules to receive concise updates when matching jobs are posted.</p>
+        </div>
+
+        <div>
+          <label for="rule-name" class="muted">Rule name</label>
+          <input id="rule-name" class="input" placeholder="e.g. Remote Backend Roles" />
+        </div>
+
+        <div style="display:flex;gap:var(--space-sm)">
+          <button class="btn btn-primary">Save rule</button>
+          <button class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+
+      <div style="height: var(--space-lg)"></div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Existing rules</h3>
+        <div class="muted">No rules yet — create your first rule to get started.</div>
+      </div>
+    </section>
+
+    <aside class="secondary">
+      <div class="card">
+        <h4 style="margin-top:0">Step explanation</h4>
+        <p class="muted">This step gathers the primary filter terms used to match job postings.</p>
+      </div>
+
+      <div style="height: var(--space-sm)"></div>
+
+      <div class="card">
+        <h4 style="margin-top:0">Copyable prompt</h4>
+        <div class="prompt-box" id="prompt">Find remote backend engineer roles with 5+ years experience in Node.js.</div>
+        <button class="btn btn-secondary copy-btn" onclick="copyPrompt()">Copy</button>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="proof-footer container" role="contentinfo">
+    <ul aria-hidden="false">
+      <li>UI Built</li>
+      <li>Logic Working</li>
+      <li>Test Passed</li>
+      <li>Deployed</li>
+    </ul>
+  </footer>
+
+  <script>
+    function copyPrompt(){
+      const el = document.getElementById('prompt');
+      navigator.clipboard?.writeText(el.innerText).then(()=> {
+        alert('Copied');
+      }).catch(()=> {
+        alert('Copy failed');
+      });
+    }
+  </script>
+</body>
+</html>
+
