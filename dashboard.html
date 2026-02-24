@@ -93,6 +93,16 @@
         </label>
         <div id="thresholdInfo" style="color:rgba(17,17,17,0.6);margin-left:auto;">Threshold: <strong id="currentThreshold">40</strong></div>
       </div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+        <label style="font-weight:600;">Status:</label>
+        <select id="filter-status" style="padding:10px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">
+          <option value="">All</option>
+          <option>Not Applied</option>
+          <option>Applied</option>
+          <option>Rejected</option>
+          <option>Selected</option>
+        </select>
+      </div>
 
       <div id="jobsList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;"></div>
 
@@ -119,6 +129,7 @@
       const fmode = document.getElementById('filter-mode');
       const fexp = document.getElementById('filter-exp');
       const fsrc = document.getElementById('filter-source');
+      const fstatus = document.getElementById('filter-status');
       const sortEl = document.getElementById('sort');
       const noResults = document.getElementById('noResults');
       const noMatchesPrefs = document.getElementById('noMatchesPrefs');
@@ -161,6 +172,19 @@
       });
 
       function getSavedIds(){ try { return JSON.parse(localStorage.getItem('savedJobs')||'[]'); } catch(e){ return []; } }
+      function getStatusMap(){ try { return JSON.parse(localStorage.getItem('jobTrackerStatus')||'{}'); } catch(e){ return {}; } }
+      function setStatus(jobId, status){
+        const map = getStatusMap();
+        map[jobId] = status;
+        localStorage.setItem('jobTrackerStatus', JSON.stringify(map));
+        // record update history
+        try {
+          const updates = JSON.parse(localStorage.getItem('jobTrackerStatusUpdates')||'[]');
+          updates.unshift({ jobId, status, date: new Date().toISOString() });
+          // keep recent 100
+          localStorage.setItem('jobTrackerStatusUpdates', JSON.stringify(updates.slice(0,100)));
+        } catch(e){}
+      }
       function saveToggle(id){
         const arr = getSavedIds();
         const idx = arr.indexOf(id);
@@ -230,6 +254,14 @@
         return `<span style="padding:6px 8px;border-radius:6px;background:${color};color:white;font-weight:600;font-size:13px;">${score}</span>`;
       }
 
+      function statusBadgeHtml(status){
+        let bg = 'rgba(17,17,17,0.15)'; let color = '#111';
+        if (status === 'Applied') { bg = '#1e6fb8'; color = '#fff'; }
+        if (status === 'Rejected') { bg = '#b00000'; color = '#fff'; }
+        if (status === 'Selected') { bg = '#1a7f37'; color = '#fff'; }
+        return `<span style="padding:6px 8px;border-radius:6px;background:${bg};color:${color};font-weight:600;font-size:13px;">${status}</span>`;
+      }
+
       function renderCard(job){
         const savedIds = getSavedIds();
         const container = document.createElement('div');
@@ -258,12 +290,34 @@
             <button class="saveBtn" data-id="${job.id}" style="background:transparent;border:1px solid rgba(0,0,0,0.08);padding:8px 10px;border-radius:6px;">${savedIds.includes(job.id)?'Saved':'Save'}</button>
             <a class="applyBtn" href="${job.applyUrl}" target="_blank" rel="noopener" style="margin-left:auto;background:var(--accent);color:white;padding:8px 10px;border-radius:6px;text-decoration:none;">Apply</a>
           </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+            <label style="font-weight:600;">Status:</label>
+            <select class="statusSelect" data-id="${job.id}" style="padding:8px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">
+              <option>Not Applied</option>
+              <option>Applied</option>
+              <option>Rejected</option>
+              <option>Selected</option>
+            </select>
+            <div class="statusBadge" style="margin-left:8px;">${statusBadgeHtml((getStatusMap()[job.id]||'Not Applied'))}</div>
+          </div>
         `;
 
         container.querySelector('.viewBtn').addEventListener('click', ()=> openModal(job));
         container.querySelector('.saveBtn').className = 'saveBtn';
         container.querySelector('.saveBtn').setAttribute('data-id', job.id);
         container.querySelector('.saveBtn').addEventListener('click', ()=> saveToggle(job.id));
+        const sel = container.querySelector('.statusSelect');
+        sel.value = getStatusMap()[job.id] || 'Not Applied';
+        sel.addEventListener('change', (e) => {
+          const newStatus = e.target.value;
+          setStatus(job.id, newStatus);
+          // update badge
+          const badge = container.querySelector('.statusBadge');
+          if (badge) badge.innerHTML = statusBadgeHtml(newStatus);
+          showToast(`Status updated: ${newStatus}`);
+          // re-run filters/render to reflect status filter
+          renderJobs();
+        });
         return container;
       }
 
@@ -286,6 +340,7 @@
         const loc = floc.value;
         const mode = fmode.value;
         const exp = fexp.value;
+        const statusFilter = fstatus ? fstatus.value : '';
         const src = fsrc.value;
         let out = jobs.slice();
         // compute match scores (cache)
@@ -296,6 +351,11 @@
         if (mode) out = out.filter(j => j.mode === mode);
         if (exp) out = out.filter(j => j.experience === exp);
         if (src) out = out.filter(j => j.source === src);
+        // status filter
+        if (statusFilter) {
+          const map = getStatusMap();
+          out = out.filter(j => (map[j.id] || 'Not Applied') === statusFilter);
+        }
         // show-only toggle
         const prefsLocal = loadPreferences();
         const threshold = prefsLocal && prefsLocal.minMatchScore != null ? prefsLocal.minMatchScore : 40;
@@ -337,7 +397,7 @@
       }
 
       // wire inputs
-      [q,floc,fmode,fexp,fsrc,sortEl,onlyMatches].forEach(el=>{
+      [q,floc,fmode,fexp,fsrc,fstatus,sortEl,onlyMatches].forEach(el=>{
         el.addEventListener('input', renderJobs);
         el.addEventListener('change', renderJobs);
       });

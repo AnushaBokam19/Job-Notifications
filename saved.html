@@ -73,12 +73,54 @@
         if (idx !== -1){ arr.splice(idx,1); localStorage.setItem('savedJobs', JSON.stringify(arr)); renderSaved(); }
       }
 
+      function getStatusMap(){ try { return JSON.parse(localStorage.getItem('jobTrackerStatus')||'{}'); } catch(e){ return {}; } }
+      function setStatus(jobId, status){
+        const map = getStatusMap();
+        map[jobId] = status;
+        localStorage.setItem('jobTrackerStatus', JSON.stringify(map));
+        // record update history
+        try {
+          const updates = JSON.parse(localStorage.getItem('jobTrackerStatusUpdates')||'[]');
+          updates.unshift({ jobId, status, date: new Date().toISOString() });
+          localStorage.setItem('jobTrackerStatusUpdates', JSON.stringify(updates.slice(0,100)));
+        } catch(e){}
+      }
+
+      function showToast(message){
+        const existing = document.getElementById('jn-toast');
+        if (existing) existing.remove();
+        const t = document.createElement('div');
+        t.id = 'jn-toast';
+        t.style.position = 'fixed';
+        t.style.right = '20px';
+        t.style.bottom = '20px';
+        t.style.background = 'white';
+        t.style.border = '1px solid rgba(0,0,0,0.06)';
+        t.style.padding = '10px 14px';
+        t.style.borderRadius = '8px';
+        t.style.boxShadow = 'none';
+        t.style.fontWeight = '600';
+        t.style.color = 'var(--accent)';
+        t.textContent = message;
+        document.body.appendChild(t);
+        setTimeout(()=> { t.style.transition='opacity 300ms'; t.style.opacity='0'; setTimeout(()=> t.remove(),300); }, 2600);
+      }
+
       function renderCard(job){
         const container = document.createElement('div');
         container.style.background = 'white';
         container.style.borderRadius = '8px';
         container.style.padding = '16px';
         container.style.border = '1px solid rgba(0,0,0,0.06)';
+        const statusMap = getStatusMap();
+        const currentStatus = statusMap[job.id] || 'Not Applied';
+        function statusBadgeHtml(status){
+          let bg = 'rgba(17,17,17,0.15)'; let color = '#111';
+          if (status === 'Applied') { bg = '#1e6fb8'; color = '#fff'; }
+          if (status === 'Rejected') { bg = '#b00000'; color = '#fff'; }
+          if (status === 'Selected') { bg = '#1a7f37'; color = '#fff'; }
+          return `<span style="padding:6px 8px;border-radius:6px;background:${bg};color:${color};font-weight:600;font-size:13px;">${status}</span>`;
+        }
         container.innerHTML = `
           <h3 style="margin:0 0 6px 0; font-family:Georgia,serif;">${job.title}</h3>
           <div style="color:rgba(17,17,17,0.8);font-weight:600">${job.company}</div>
@@ -88,7 +130,25 @@
             <a class="applyBtn" href="${job.applyUrl}" target="_blank" rel="noopener" style="margin-left:auto;background:var(--accent);color:white;padding:8px 10px;border-radius:6px;text-decoration:none;">Apply</a>
             <button class="removeBtn" data-id="${job.id}" style="background:transparent;border:1px solid rgba(0,0,0,0.08);padding:8px 10px;border-radius:6px;margin-left:8px;">Remove</button>
           </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
+            <label style="font-weight:600;">Status:</label>
+            <select class="statusSelect" data-id="${job.id}" style="padding:8px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">
+              <option>Not Applied</option>
+              <option>Applied</option>
+              <option>Rejected</option>
+              <option>Selected</option>
+            </select>
+            <div class="statusBadge" style="margin-left:8px;">${statusBadgeHtml(currentStatus)}</div>
+          </div>
         `;
+        container.querySelector('.statusSelect').value = currentStatus;
+        container.querySelector('.statusSelect').addEventListener('change', (e)=>{
+          const newStatus = e.target.value;
+          setStatus(job.id, newStatus);
+          const badge = container.querySelector('.statusBadge');
+          if (badge) badge.innerHTML = statusBadgeHtml(newStatus);
+          showToast(`Status updated: ${newStatus}`);
+        });
         container.querySelector('.removeBtn').addEventListener('click', ()=> removeSaved(job.id));
         container.querySelector('.viewBtn').addEventListener('click', ()=> openModal(job));
         return container;

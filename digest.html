@@ -77,6 +77,11 @@
         </div>
       </div>
 
+      <div id="recentStatus" style="margin-top:18px;">
+        <h3 style="font-family:Georgia,serif;margin-bottom:8px;">Recent Status Updates</h3>
+        <div id="statusUpdates" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
       <div id="noDigestMatches" style="display:none;margin-top:12px;color:rgba(17,17,17,0.6);">No matching roles today. Check again tomorrow.</div>
     </section>
 
@@ -207,6 +212,31 @@
             const parsed = JSON.parse(existing);
             displayDigest(parsed.jobs, parsed.date);
           } catch(e){}
+        }
+      })();
+
+      // load recent status updates
+      (function loadStatusUpdates(){
+        const updatesEl = document.getElementById('statusUpdates');
+        updatesEl.innerHTML = '';
+        try {
+          const updates = JSON.parse(localStorage.getItem('jobTrackerStatusUpdates')||'[]');
+          if (!updates.length) {
+            updatesEl.innerHTML = '<div class="muted">No recent updates.</div>';
+            return;
+          }
+          // show latest 10
+          updates.slice(0,10).forEach(u => {
+            const job = JOBS.find(j=>j.id === u.jobId) || {};
+            const row = document.createElement('div');
+            row.style.display='flex';
+            row.style.justifyContent='space-between';
+            row.style.alignItems='center';
+            row.innerHTML = `<div><div style="font-weight:600">${job.title || 'Unknown'}</div><div style="color:rgba(17,17,17,0.6)">${job.company || ''}</div></div><div style="text-align:right"><div style="font-weight:600">${u.status}</div><div style="color:rgba(17,17,17,0.6);font-size:13px">${new Date(u.date).toLocaleString()}</div></div>`;
+            updatesEl.appendChild(row);
+          });
+        } catch(e){
+          updatesEl.innerHTML = '<div class="muted">No recent updates.</div>';
         }
       })();
 
