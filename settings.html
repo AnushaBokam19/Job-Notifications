@@ -52,43 +52,116 @@
     <h1>Settings</h1>
     <p class="muted" style="margin-bottom:18px;">Set your preferences to receive tailored job notifications.</p>
 
-    <form aria-label="Preferences" style="max-width:720px;">
+    <form id="prefsForm" aria-label="Preferences" style="max-width:720px;">
       <div style="margin-bottom:18px;">
-        <label for="role" style="display:block; font-weight:600; margin-bottom:6px;">Role keywords</label>
-        <input id="role" class="input" placeholder="e.g. Backend Engineer, Product Designer" style="width:100%; padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);" />
+        <label for="roleKeywords" style="display:block; font-weight:600; margin-bottom:6px;">Role keywords</label>
+        <input id="roleKeywords" class="input" placeholder="e.g. Backend Engineer, Product Designer" style="width:100%; padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);" />
         <p class="muted" style="margin-top:8px;">Comma-separated keywords to match job titles and descriptions.</p>
       </div>
 
       <div style="margin-bottom:18px;">
-        <label for="locations" style="display:block; font-weight:600; margin-bottom:6px;">Preferred locations</label>
-        <input id="locations" class="input" placeholder="e.g. New York, Remote, Berlin" style="width:100%; padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);" />
-        <p class="muted" style="margin-top:8px;">Locations you prefer (city names, remote, or region).</p>
+        <label for="preferredLocations" style="display:block; font-weight:600; margin-bottom:6px;">Preferred locations</label>
+        <select id="preferredLocations" multiple style="width:100%; padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.12); min-height:80px;">
+        </select>
+        <p class="muted" style="margin-top:8px;">Select one or more preferred locations.</p>
       </div>
 
       <div style="margin-bottom:18px;">
-        <div style="font-weight:600; margin-bottom:6px;">Mode</div>
-        <label style="display:inline-flex; align-items:center; gap:8px; margin-right:12px;"><input type="radio" name="mode" disabled /> Remote</label>
-        <label style="display:inline-flex; align-items:center; gap:8px; margin-right:12px;"><input type="radio" name="mode" disabled /> Hybrid</label>
-        <label style="display:inline-flex; align-items:center; gap:8px;"><input type="radio" name="mode" disabled /> Onsite</label>
-        <p class="muted" style="margin-top:8px;">Select work mode preference.</p>
+        <div style="font-weight:600; margin-bottom:6px;">Preferred Mode</div>
+        <label style="display:inline-flex; align-items:center; gap:8px; margin-right:12px;"><input type="checkbox" id="modeRemote" /> Remote</label>
+        <label style="display:inline-flex; align-items:center; gap:8px; margin-right:12px;"><input type="checkbox" id="modeHybrid" /> Hybrid</label>
+        <label style="display:inline-flex; align-items:center; gap:8px;"><input type="checkbox" id="modeOnsite" /> Onsite</label>
+        <p class="muted" style="margin-top:8px;">Choose preferred work modes.</p>
       </div>
 
       <div style="margin-bottom:18px;">
-        <label for="experience" style="display:block; font-weight:600; margin-bottom:6px;">Experience level</label>
-        <select id="experience" style="width:100%; padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);">
-          <option>Entry</option>
-          <option>Mid</option>
-          <option>Senior</option>
-          <option>Lead</option>
+        <label for="experienceLevel" style="display:block; font-weight:600; margin-bottom:6px;">Experience level</label>
+        <select id="experienceLevel" style="width:100%; padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);">
+          <option value="">Any</option>
+          <option>Fresher</option>
+          <option>0-1</option>
+          <option>1-3</option>
+          <option>3-5</option>
         </select>
         <p class="muted" style="margin-top:8px;">Choose the experience level you are targeting.</p>
       </div>
 
+      <div style="margin-bottom:18px;">
+        <label for="skills" style="display:block; font-weight:600; margin-bottom:6px;">Skills</label>
+        <input id="skills" class="input" placeholder="e.g. React, Node.js, SQL" style="width:100%; padding:10px; border-radius:6px; border:1px solid rgba(0,0,0,0.12);" />
+        <p class="muted" style="margin-top:8px;">Comma-separated skills to prioritize.</p>
+      </div>
+
+      <div style="margin-bottom:18px;">
+        <label for="minMatchScore" style="display:block; font-weight:600; margin-bottom:6px;">Minimum match score: <span id="minMatchVal">40</span></label>
+        <input id="minMatchScore" type="range" min="0" max="100" value="40" style="width:100%;" />
+        <p class="muted" style="margin-top:8px;">Only show jobs above this score when filtering by "Show only matches".</p>
+      </div>
+
       <div style="margin-top:20px;">
-        <button type="button" class="btn btn-primary" disabled style="background:var(--accent); color:#fff; padding:10px 14px; border-radius:6px; border:none; font-weight:600;">Save preferences</button>
-        <span class="muted" style="margin-left:12px;">(UI placeholder — no saving in this step)</span>
+        <button id="savePrefs" type="button" class="btn btn-primary" style="background:var(--accent); color:#fff; padding:10px 14px; border-radius:6px; border:none; font-weight:600;">Save preferences</button>
+        <span class="muted" style="margin-left:12px;">Preferences are stored locally in your browser.</span>
       </div>
     </form>
+    <script src="jobs-data.js"></script>
+    <script>
+      (function(){
+        const JOBS = window.JOBS || [];
+        const locSelect = document.getElementById('preferredLocations');
+        const allLocations = [...new Set(JOBS.map(j=>j.location))].sort();
+        allLocations.forEach(loc=>{
+          const opt = document.createElement('option'); opt.value = loc; opt.textContent = loc; locSelect.appendChild(opt);
+        });
+
+        const minMatchScore = document.getElementById('minMatchScore');
+        const minMatchVal = document.getElementById('minMatchVal');
+        minMatchScore.addEventListener('input', ()=> minMatchVal.textContent = minMatchScore.value);
+
+        function loadPrefs(){
+          try {
+            const p = JSON.parse(localStorage.getItem('jobTrackerPreferences') || '{}');
+            if (!p || Object.keys(p).length===0) return;
+            document.getElementById('roleKeywords').value = (p.roleKeywords || []).join(', ');
+            document.getElementById('skills').value = (p.skills || []).join(', ');
+            // locations
+            if (p.preferredLocations && Array.isArray(p.preferredLocations)){
+              Array.from(locSelect.options).forEach(opt => {
+                opt.selected = p.preferredLocations.includes(opt.value);
+              });
+            }
+            // modes
+            document.getElementById('modeRemote').checked = (p.preferredMode || []).includes('Remote');
+            document.getElementById('modeHybrid').checked = (p.preferredMode || []).includes('Hybrid');
+            document.getElementById('modeOnsite').checked = (p.preferredMode || []).includes('Onsite');
+            document.getElementById('experienceLevel').value = p.experienceLevel || '';
+            minMatchScore.value = p.minMatchScore != null ? p.minMatchScore : 40;
+            minMatchVal.textContent = minMatchScore.value;
+          } catch (e) { /* ignore */ }
+        }
+
+        function savePrefs(){
+          const roleKeywords = document.getElementById('roleKeywords').value.split(',').map(s=>s.trim()).filter(Boolean);
+          const skills = document.getElementById('skills').value.split(',').map(s=>s.trim()).filter(Boolean);
+          const preferredLocations = Array.from(locSelect.selectedOptions).map(o=>o.value);
+          const preferredMode = [];
+          if (document.getElementById('modeRemote').checked) preferredMode.push('Remote');
+          if (document.getElementById('modeHybrid').checked) preferredMode.push('Hybrid');
+          if (document.getElementById('modeOnsite').checked) preferredMode.push('Onsite');
+          const experienceLevel = document.getElementById('experienceLevel').value || '';
+          const minMatch = parseInt(minMatchScore.value,10) || 40;
+          const prefs = { roleKeywords, skills, preferredLocations, preferredMode, experienceLevel, minMatchScore: minMatch };
+          localStorage.setItem('jobTrackerPreferences', JSON.stringify(prefs));
+          // show subtle saved confirmation
+          const btn = document.getElementById('savePrefs');
+          const old = btn.textContent;
+          btn.textContent = 'Saved';
+          setTimeout(()=> btn.textContent = old, 1500);
+        }
+
+        document.getElementById('savePrefs').addEventListener('click', savePrefs);
+        loadPrefs();
+      })();
+    </script>
   </main>
 
   <footer class="container" role="contentinfo"><p class="muted" style="text-align:center">Premium Design System</p></footer>

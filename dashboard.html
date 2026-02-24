@@ -52,8 +52,11 @@
     <h1>Dashboard</h1>
 
     <section style="max-width:960px; margin-top:18px;">
+      <div id="prefsBanner" style="display:none;background:#fff7f7;border:1px solid rgba(139,0,0,0.08);padding:12px;border-radius:6px;margin-bottom:12px;color:var(--accent);">
+        Set your preferences to activate intelligent matching.
+      </div>
       <!-- Filter bar -->
-      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px;">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:12px;">
         <input id="q" placeholder="Search title or company" style="flex:1;min-width:180px;padding:10px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);" />
         <select id="filter-location" style="padding:10px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">
           <option value="">All locations</option>
@@ -79,13 +82,22 @@
         </select>
         <select id="sort" style="padding:10px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);">
           <option value="latest">Latest</option>
+          <option value="match">Match Score</option>
           <option value="salary">Salary</option>
         </select>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+        <label style="display:inline-flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="onlyMatches" /> Show only jobs above my threshold
+        </label>
+        <div id="thresholdInfo" style="color:rgba(17,17,17,0.6);margin-left:auto;">Threshold: <strong id="currentThreshold">40</strong></div>
       </div>
 
       <div id="jobsList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;"></div>
 
       <div id="noResults" style="display:none; margin-top:24px; color:rgba(17,17,17,0.6);">No jobs match your search.</div>
+      <div id="noMatchesPrefs" style="display:none; margin-top:24px; color:rgba(17,17,17,0.6);">No roles match your criteria. Adjust filters or lower threshold.</div>
     </section>
 
     <!-- Modal -->
@@ -100,7 +112,7 @@
   <script src="jobs-data.js"></script>
   <script>
     (function(){
-      const jobs = window.JOBS || [];
+      const jobs = (window.JOBS || []).map(j => Object.assign({}, j)); // shallow clone
       const jobsList = document.getElementById('jobsList');
       const q = document.getElementById('q');
       const floc = document.getElementById('filter-location');
@@ -109,16 +121,43 @@
       const fsrc = document.getElementById('filter-source');
       const sortEl = document.getElementById('sort');
       const noResults = document.getElementById('noResults');
+      const noMatchesPrefs = document.getElementById('noMatchesPrefs');
+      const prefsBanner = document.getElementById('prefsBanner');
+      const onlyMatches = document.getElementById('onlyMatches');
+      const currentThreshold = document.getElementById('currentThreshold');
       const modal = document.getElementById('modal');
       const modalContent = document.getElementById('modalContent');
       const modalClose = document.getElementById('modalClose');
 
       function unique(values){ return [...new Set(values)].sort(); }
 
+      // load preferences
+      function loadPreferences(){
+        try {
+          return JSON.parse(localStorage.getItem('jobTrackerPreferences') || 'null');
+        } catch (e){ return null; }
+      }
+      let prefs = loadPreferences();
+      function prefsSet() { return prefs && Object.keys(prefs).length>0; }
+      if (prefs && prefs.minMatchScore != null) currentThreshold.textContent = prefs.minMatchScore;
+
+      // show banner if prefs not set
+      if (!prefsSet()) {
+        prefsBanner.style.display = 'block';
+      } else {
+        prefsBanner.style.display = 'none';
+      }
+
       // populate location dropdown
       const locations = unique(jobs.map(j=>j.location));
       locations.forEach(loc=>{
         const opt = document.createElement('option'); opt.value = loc; opt.textContent = loc; floc.appendChild(opt);
+      });
+
+      // populate source dropdown
+      const sources = unique(jobs.map(j=>j.source));
+      sources.forEach(s=>{
+        const opt = document.createElement('option'); opt.value = s; opt.textContent = s; fsrc.appendChild(opt);
       });
 
       function getSavedIds(){ try { return JSON.parse(localStorage.getItem('savedJobs')||'[]'); } catch(e){ return []; } }
@@ -127,7 +166,68 @@
         const idx = arr.indexOf(id);
         if (idx === -1) arr.push(id); else arr.splice(idx,1);
         localStorage.setItem('savedJobs', JSON.stringify(arr));
-        renderJobs();
+        // update single card label instead of full re-render for performance
+        const btn = document.querySelector(`button.saveBtn[data-id="${id}"]`);
+        if (btn) btn.textContent = arr.includes(id) ? 'Saved' : 'Save';
+      }
+
+      // match score engine
+      function computeMatchScore(job){
+        prefs = loadPreferences();
+        let score = 0;
+        if (!prefs) { job._matchScore = 0; return 0; }
+        const rk = (prefs.roleKeywords || []).map(s=>s.toLowerCase());
+        const js = (prefs.skills || []).map(s=>s.toLowerCase());
+        const title = (job.title||'').toLowerCase();
+        const desc = (job.description||'').toLowerCase();
+        // +25 if any roleKeyword appears in job.title
+        if (rk.some(k => k && title.includes(k))) score += 25;
+        // +15 if any roleKeyword appears in job.description
+        if (rk.some(k => k && desc.includes(k))) score += 15;
+        // +15 if job.location matches preferredLocations
+        if ((prefs.preferredLocations||[]).includes(job.location)) score += 15;
+        // +10 if job.mode matches preferredMode
+        if ((prefs.preferredMode||[]).includes(job.mode)) score += 10;
+        // +10 if job.experience matches experienceLevel
+        if (prefs.experienceLevel && job.experience === prefs.experienceLevel) score += 10;
+        // +15 if overlap between job.skills and user.skills
+        if (js.length && job.skills.some(s=> js.includes(s.toLowerCase()))) score += 15;
+        // +5 if postedDaysAgo <= 2
+        if (typeof job.postedDaysAgo === 'number' && job.postedDaysAgo <= 2) score += 5;
+        // +5 if source is LinkedIn
+        if (job.source === 'LinkedIn') score += 5;
+        if (score > 100) score = 100;
+        job._matchScore = score;
+        return score;
+      }
+
+      function parseSalaryValue(s){
+        if (!s) return 0;
+        // extract numbers
+        const nums = s.replace(/₹|,|\\s/g,'').match(/\\d+(?:\\.\\d+)?/g);
+        if (!nums) return 0;
+        const first = parseFloat(nums[0]);
+        // if LPA present, use as LPA
+        if (/lpa/i.test(s)) return first;
+        // if per month, convert to annual approx in LPA (k to LPA)
+        if (/month/i.test(s)) {
+          // assume numbers are in thousands when 'k' used; handle 15k -> 15 -> 0.18 LPA
+          if (/k/i.test(s)) {
+            // average monthly *12 /100000
+            const avg = nums.length>1 ? (parseFloat(nums[0])+parseFloat(nums[1]))/2 : first;
+            return (avg*12)/100000;
+          }
+          return (first*12)/100000;
+        }
+        return first;
+      }
+
+      function badgeHtml(score){
+        let color = 'rgba(17,17,17,0.45)';
+        if (score >= 80) color = '#1a7f37'; // green
+        else if (score >= 60) color = '#b36b00'; // amber
+        else if (score >= 40) color = 'rgba(17,17,17,0.8)'; // neutral
+        return `<span style="padding:6px 8px;border-radius:6px;background:${color};color:white;font-weight:600;font-size:13px;">${score}</span>`;
       }
 
       function renderCard(job){
@@ -138,25 +238,32 @@
         container.style.padding = '16px';
         container.style.border = '1px solid rgba(0,0,0,0.06)';
 
+        const score = computeMatchScore(job);
+
         container.innerHTML = `
-          <h3 style="margin:0 0 6px 0; font-family:Georgia,serif;">${job.title}</h3>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="color:rgba(17,17,17,0.8);font-weight:600">${job.company}</div>
-            <div style="font-size:13px;color:rgba(17,17,17,0.6)">${job.postedDaysAgo} days ago • <span style="font-weight:600">${job.source}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <h3 style="margin:0 0 6px 0; font-family:Georgia,serif;">${job.title}</h3>
+              <div style="color:rgba(17,17,17,0.8);font-weight:600">${job.company}</div>
+              <div style="color:rgba(17,17,17,0.7);margin-top:8px;">${job.location} • ${job.mode} • ${job.experience} • <strong>${job.salaryRange}</strong></div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px;color:rgba(17,17,17,0.6)">${job.postedDaysAgo} days ago</div>
+              <div style="margin-top:8px;">${badgeHtml(score)}</div>
+              <div style="margin-top:6px;font-size:13px;color:rgba(17,17,17,0.6);font-weight:600">${job.source}</div>
+            </div>
           </div>
-          <div style="color:rgba(17,17,17,0.7);margin-bottom:10px;">
-            ${job.location} • ${job.mode} • ${job.experience} • <strong>${job.salaryRange}</strong>
-          </div>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:8px;margin-top:12px;">
             <button class="viewBtn" data-id="${job.id}" style="background:transparent;border:1px solid var(--accent);color:var(--accent);padding:8px 10px;border-radius:6px;">View</button>
             <button class="saveBtn" data-id="${job.id}" style="background:transparent;border:1px solid rgba(0,0,0,0.08);padding:8px 10px;border-radius:6px;">${savedIds.includes(job.id)?'Saved':'Save'}</button>
             <a class="applyBtn" href="${job.applyUrl}" target="_blank" rel="noopener" style="margin-left:auto;background:var(--accent);color:white;padding:8px 10px;border-radius:6px;text-decoration:none;">Apply</a>
           </div>
         `;
 
-        // attach listeners
         container.querySelector('.viewBtn').addEventListener('click', ()=> openModal(job));
-        container.querySelector('.saveBtn').addEventListener('click', (e)=> { saveToggle(job.id); });
+        container.querySelector('.saveBtn').className = 'saveBtn';
+        container.querySelector('.saveBtn').setAttribute('data-id', job.id);
+        container.querySelector('.saveBtn').addEventListener('click', ()=> saveToggle(job.id));
         return container;
       }
 
@@ -166,7 +273,8 @@
           <div style="color:rgba(17,17,17,0.7);margin-bottom:12px;">${job.company} • ${job.location} • ${job.mode}</div>
           <div style="margin-bottom:12px;">${job.description}</div>
           <div style="margin-bottom:8px;"><strong>Skills:</strong> ${job.skills.join(', ')}</div>
-          <a href="${job.applyUrl}" target="_blank" rel="noopener" style="background:var(--accent);color:#fff;padding:8px 12px;border-radius:6px;text-decoration:none;display:inline-block;">Open Apply Page</a>
+          <div style="margin-top:8px;"><strong>Match score:</strong> ${job._matchScore || 0}</div>
+          <a href="${job.applyUrl}" target="_blank" rel="noopener" style="background:var(--accent);color:#fff;padding:8px 12px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:12px;">Open Apply Page</a>
         `;
         modal.style.display = 'flex';
       }
@@ -180,38 +288,58 @@
         const exp = fexp.value;
         const src = fsrc.value;
         let out = jobs.slice();
-        if (keyword) out = out.filter(j => (j.title + ' ' + j.company).toLowerCase().includes(keyword));
+        // compute match scores (cache)
+        out.forEach(j => computeMatchScore(j));
+        // AND filters
+        if (keyword) out = out.filter(j => (j.title + ' ' + j.company + ' ' + j.description).toLowerCase().includes(keyword));
         if (loc) out = out.filter(j => j.location === loc);
         if (mode) out = out.filter(j => j.mode === mode);
         if (exp) out = out.filter(j => j.experience === exp);
         if (src) out = out.filter(j => j.source === src);
+        // show-only toggle
+        const prefsLocal = loadPreferences();
+        const threshold = prefsLocal && prefsLocal.minMatchScore != null ? prefsLocal.minMatchScore : 40;
+        document.getElementById('currentThreshold').textContent = threshold;
+        if (onlyMatches.checked) out = out.filter(j => (j._matchScore || 0) >= threshold);
+        // sorting
         if (sortEl.value === 'latest') out.sort((a,b)=> a.postedDaysAgo - b.postedDaysAgo);
-        // salary sort not implemented deeply; stable fallback
+        else if (sortEl.value === 'match') out.sort((a,b)=> (b._matchScore || 0) - (a._matchScore || 0));
+        else if (sortEl.value === 'salary') out.sort((a,b)=> parseSalaryValue(b.salaryRange) - parseSalaryValue(a.salaryRange));
         return out;
       }
 
       function renderJobs(){
         const list = filterJobs();
-        jobsList.innerHTML = '';
+        // determine which message to show
         if (list.length === 0){
-          noResults.style.display = 'block';
+          noResults.style.display = 'none';
+          // if prefs exist and onlyMatches is on show specific message
+          if (onlyMatches.checked && prefsSet()) {
+            noMatchesPrefs.style.display = 'block';
+          } else {
+            noMatchesPrefs.style.display = 'none';
+            noResults.style.display = 'block';
+          }
+          jobsList.innerHTML = '';
+          return;
         } else {
           noResults.style.display = 'none';
-          list.forEach(job => {
-            jobsList.appendChild(renderCard(job));
-          });
+          noMatchesPrefs.style.display = 'none';
         }
+
+        // efficient rendering: reuse if possible by diffing ids
+        jobsList.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        list.forEach(job => {
+          frag.appendChild(renderCard(job));
+        });
+        jobsList.appendChild(frag);
       }
 
-      [q,floc,fmode,fexp,fsrc,sortEl].forEach(el=>{
+      // wire inputs
+      [q,floc,fmode,fexp,fsrc,sortEl,onlyMatches].forEach(el=>{
         el.addEventListener('input', renderJobs);
         el.addEventListener('change', renderJobs);
-      });
-
-      // populate source dropdown
-      const sources = unique(jobs.map(j=>j.source));
-      sources.forEach(s=>{
-        const opt = document.createElement('option'); opt.value = s; opt.textContent = s; fsrc.appendChild(opt);
       });
 
       // initial render
