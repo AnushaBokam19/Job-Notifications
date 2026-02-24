@@ -50,9 +50,81 @@
 
   <main class="page" role="main">
     <h1>Saved</h1>
-    <div style="max-width:720px; margin-top:18px;">
-      <p class="muted">No saved jobs yet. This premium area will hold curated saves and notes — coming soon.</p>
-    </div>
+    <section style="max-width:960px; margin-top:18px;">
+      <div id="savedList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;"></div>
+      <div id="savedEmpty" style="margin-top:18px;color:rgba(17,17,17,0.6);">
+        No saved jobs yet. This premium area will hold curated saves and notes — coming soon.
+      </div>
+    </section>
+
+  </main>
+
+  <script src="jobs-data.js"></script>
+  <script>
+    (function(){
+      const jobs = window.JOBS || [];
+      const savedList = document.getElementById('savedList');
+      const savedEmpty = document.getElementById('savedEmpty');
+
+      function getSavedIds(){ try { return JSON.parse(localStorage.getItem('savedJobs')||'[]'); } catch(e){ return []; } }
+      function removeSaved(id){
+        const arr = getSavedIds();
+        const idx = arr.indexOf(id);
+        if (idx !== -1){ arr.splice(idx,1); localStorage.setItem('savedJobs', JSON.stringify(arr)); renderSaved(); }
+      }
+
+      function renderCard(job){
+        const container = document.createElement('div');
+        container.style.background = 'white';
+        container.style.borderRadius = '8px';
+        container.style.padding = '16px';
+        container.style.border = '1px solid rgba(0,0,0,0.06)';
+        container.innerHTML = `
+          <h3 style="margin:0 0 6px 0; font-family:Georgia,serif;">${job.title}</h3>
+          <div style="color:rgba(17,17,17,0.8);font-weight:600">${job.company}</div>
+          <div style="color:rgba(17,17,17,0.7);margin:8px 0;">${job.location} • ${job.mode} • ${job.experience}</div>
+          <div style="display:flex;gap:8px;">
+            <button class="viewBtn" data-id="${job.id}" style="background:transparent;border:1px solid var(--accent);color:var(--accent);padding:8px 10px;border-radius:6px;">View</button>
+            <a class="applyBtn" href="${job.applyUrl}" target="_blank" rel="noopener" style="margin-left:auto;background:var(--accent);color:white;padding:8px 10px;border-radius:6px;text-decoration:none;">Apply</a>
+            <button class="removeBtn" data-id="${job.id}" style="background:transparent;border:1px solid rgba(0,0,0,0.08);padding:8px 10px;border-radius:6px;margin-left:8px;">Remove</button>
+          </div>
+        `;
+        container.querySelector('.removeBtn').addEventListener('click', ()=> removeSaved(job.id));
+        container.querySelector('.viewBtn').addEventListener('click', ()=> openModal(job));
+        return container;
+      }
+
+      // Modal (simple)
+      const modal = document.createElement('div');
+      modal.style.display = 'none';
+      modal.style.position='fixed';
+      modal.style.left=0; modal.style.top=0; modal.style.right=0; modal.style.bottom=0;
+      modal.style.alignItems='center'; modal.style.justifyContent='center'; modal.style.background='rgba(0,0,0,0.2)';
+      modal.innerHTML = '<div style="background:var(--bg); padding:20px; border-radius:8px; max-width:720px; margin:20px;"><button id="mClose" style="float:right;border:none;background:transparent;font-size:18px;">✕</button><div id="mContent"></div></div>';
+      document.body.appendChild(modal);
+      const mContent = modal.querySelector('#mContent');
+      modal.querySelector('#mClose').addEventListener('click', ()=> modal.style.display='none');
+      modal.addEventListener('click', (e)=> { if (e.target === modal) modal.style.display='none'; });
+      function openModal(job){
+        mContent.innerHTML = `<h2 style="font-family:Georgia,serif;margin-top:0;">${job.title}</h2><div style="color:rgba(17,17,17,0.7);margin-bottom:12px;">${job.company} • ${job.location} • ${job.mode}</div><div style="margin-bottom:12px;">${job.description}</div><div style="margin-bottom:8px;"><strong>Skills:</strong> ${job.skills.join(', ')}</div>`;
+        modal.style.display='flex';
+      }
+
+      function renderSaved(){
+        const ids = getSavedIds();
+        savedList.innerHTML = '';
+        if (!ids.length){
+          savedEmpty.style.display = 'block';
+        } else {
+          savedEmpty.style.display = 'none';
+          const items = jobs.filter(j => ids.includes(j.id));
+          items.forEach(job => savedList.appendChild(renderCard(job)));
+        }
+      }
+
+      renderSaved();
+    })();
+  </script>
   </main>
 
   <footer class="container" role="contentinfo"><p class="muted" style="text-align:center">Premium Design System</p></footer>
