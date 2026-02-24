@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JT Ship Gate — Job Notification App</title>
+  <link rel="stylesheet" href="./components.css">
+  <link rel="stylesheet" href="./variables.css">
+  <style>
+    :root { --bg:#F7F6F3; --accent:#8B0000; --max-text-width:720px; }
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:#111; }
+    .container { max-width:980px; margin:0 auto; padding:20px; }
+    .page { max-width:720px; margin:0 auto; padding:36px 20px; background:transparent; }
+    h1 { font-family: Georgia, "Times New Roman", Times, serif; font-size:28px; margin:0 0 6px 0; }
+    .card { background:white; border-radius:8px; padding:18px; border:1px solid rgba(0,0,0,0.06); text-align:center; }
+    .locked { color:#b00000; font-weight:700; }
+    .unlocked { color:#1a7f37; font-weight:700; }
+    .btn { background:var(--accent); color:#fff; padding:8px 12px; border-radius:6px; border:none; font-weight:600; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <header class="container" role="banner" aria-label="Primary navigation">
+    <div style="display:flex;align-items:center;justify-content:space-between;max-width:980px;margin:0 auto;">
+      <div class="brand" style="font-weight:700;">Job Notification App</div>
+      <nav class="primary" role="navigation" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="saved.html">Saved</a>
+        <a href="digest.html">Digest</a>
+        <a href="settings.html">Settings</a>
+        <a href="proof.html">Proof</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page" role="main">
+    <div class="card" id="shipCard">
+      <h1>Ship Gate</h1>
+      <div id="statusMessage" style="margin-top:12px;"></div>
+      <div id="actionArea" style="margin-top:16px;"></div>
+      <div style="margin-top:12px;color:rgba(17,17,17,0.6);">This route is locked until all checklist tests are completed.</div>
+    </div>
+  </main>
+
+  <footer class="container" role="contentinfo"><p class="muted" style="text-align:center">Premium Design System — Ship Gate</p></footer>
+
+  <script>
+    (function(){
+      const storageKey = 'jobTrackerTestStatus';
+      function loadTests(){
+        try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(e){ return {}; }
+      }
+      const tests = loadTests();
+      const total = 10;
+      const passed = Object.keys(tests).filter(k=>tests[k]).length;
+      const statusMessage = document.getElementById('statusMessage');
+      const actionArea = document.getElementById('actionArea');
+      if (passed === total){
+        statusMessage.innerHTML = '<div class="unlocked">All tests passed — Ready to ship.</div>';
+        actionArea.innerHTML = '<a class="btn" href="dashboard.html">Proceed to Dashboard</a>';
+      } else {
+        statusMessage.innerHTML = `<div class="locked">Complete all tests before shipping. (${passed}/${total} passed)</div>`;
+        actionArea.innerHTML = '<button id="goBack" class="btn">Back to Tests</button>';
+        document.getElementById('goBack').addEventListener('click', ()=> { location.href = 'jt-07-test.html'; });
+      }
+    })();
+  </script>
+</body>
+</html>
+

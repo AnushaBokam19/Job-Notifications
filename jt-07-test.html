@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JT Test Checklist — Job Notification App</title>
+  <link rel="stylesheet" href="./components.css">
+  <link rel="stylesheet" href="./variables.css">
+  <style>
+    :root { --bg:#F7F6F3; --accent:#8B0000; --max-text-width:720px; }
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:#111; }
+    .container { max-width:980px; margin:0 auto; padding:20px; }
+    .page { max-width:720px; margin:0 auto; padding:36px 20px; background:transparent; }
+    h1 { font-family: Georgia, "Times New Roman", Times, serif; font-size:28px; margin:0 0 6px 0; }
+    .muted { color: rgba(17,17,17,0.6); }
+    .card { background:white; border-radius:8px; padding:18px; border:1px solid rgba(0,0,0,0.06); }
+    .test-row { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid rgba(0,0,0,0.04); }
+    .test-row:last-child { border-bottom:none; }
+    .tooltip { font-size:12px; color:rgba(17,17,17,0.6); margin-left:6px; }
+    .summary { display:flex;align-items:center;gap:12px;margin-bottom:12px; }
+    .warning { color: #b36b00; }
+    .btn { background:var(--accent); color:#fff; padding:8px 12px; border-radius:6px; border:none; font-weight:600; text-decoration:none; }
+    .link-muted { color:rgba(17,17,17,0.6); font-size:13px; }
+  </style>
+</head>
+<body>
+  <header class="container" role="banner" aria-label="Primary navigation">
+    <div style="display:flex;align-items:center;justify-content:space-between;max-width:980px;margin:0 auto;">
+      <div class="brand" style="font-weight:700;">Job Notification App</div>
+      <nav class="primary" role="navigation" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="saved.html">Saved</a>
+        <a href="digest.html">Digest</a>
+        <a href="settings.html">Settings</a>
+        <a href="proof.html">Proof</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page" role="main">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h1>Built-in Test Checklist</h1>
+          <div class="muted">Persistent test checklist for manual QA</div>
+        </div>
+        <div style="text-align:right">
+          <div id="passedSummary" style="font-weight:700">Tests Passed: 0 / 10</div>
+          <div id="shipWarning" class="warning" style="display:none;margin-top:6px;">Resolve all issues before shipping.</div>
+          <div style="margin-top:8px;">
+            <button id="resetTests" class="btn">Reset Test Status</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <ol style="padding-left:18px;margin:0;">
+          <li class="test-row"><input type="checkbox" data-key="t1" /> <div style="flex:1;margin-left:8px;"><strong>Preferences persist after refresh</strong><div class="tooltip">How to test: Save prefs, reload /settings, confirm values</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t2" /> <div style="flex:1;margin-left:8px;"><strong>Match score calculates correctly</strong><div class="tooltip">How to test: Set prefs and inspect badge values on /dashboard</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t3" /> <div style="flex:1;margin-left:8px;"><strong>"Show only matches" toggle works</strong><div class="tooltip">How to test: Toggle and ensure only jobs ≥ threshold appear</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t4" /> <div style="flex:1;margin-left:8px;"><strong>Save job persists after refresh</strong><div class="tooltip">How to test: Save on /dashboard, reload, confirm in /saved</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t5" /> <div style="flex:1;margin-left:8px;"><strong>Apply opens in new tab</strong><div class="tooltip">How to test: Click Apply and confirm new tab opens</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t6" /> <div style="flex:1;margin-left:8px;"><strong>Status update persists after refresh</strong><div class="tooltip">How to test: Change status, reload, confirm it remains</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t7" /> <div style="flex:1;margin-left:8px;"><strong>Status filter works correctly</strong><div class="tooltip">How to test: Filter by a status and confirm results</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t8" /> <div style="flex:1;margin-left:8px;"><strong>Digest generates top 10 by score</strong><div class="tooltip">How to test: Generate digest and verify ordering</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t9" /> <div style="flex:1;margin-left:8px;"><strong>Digest persists for the day</strong><div class="tooltip">How to test: Generate digest, reload /digest, confirm it's loaded</div></div></li>
+          <li class="test-row"><input type="checkbox" data-key="t10" /> <div style="flex:1;margin-left:8px;"><strong>No console errors on main pages</strong><div class="tooltip">How to test: Open devtools, visit main pages, check console</div></div></li>
+        </ol>
+      </div>
+    </div>
+  </main>
+
+  <footer class="container" role="contentinfo"><p class="muted" style="text-align:center">Premium Design System — Test Checklist</p></footer>
+
+  <script>
+    (function(){
+      const keys = ['t1','t2','t3','t4','t5','t6','t7','t8','t9','t10'];
+      const storageKey = 'jobTrackerTestStatus';
+      const els = {};
+      keys.forEach(k => els[k] = document.querySelector(`input[data-key="${k}"]`));
+      const passedSummary = document.getElementById('passedSummary');
+      const shipWarning = document.getElementById('shipWarning');
+      const resetBtn = document.getElementById('resetTests');
+
+      function load(){
+        try {
+          const obj = JSON.parse(localStorage.getItem(storageKey) || '{}');
+          keys.forEach(k => {
+            const val = !!obj[k];
+            els[k].checked = val;
+          });
+          updateSummary();
+        } catch(e){
+          keys.forEach(k => els[k].checked = false);
+          updateSummary();
+        }
+      }
+
+      function save(){
+        const obj = {};
+        keys.forEach(k => obj[k] = !!els[k].checked);
+        localStorage.setItem(storageKey, JSON.stringify(obj));
+      }
+
+      function updateSummary(){
+        const passed = keys.reduce((acc,k)=> acc + (els[k].checked?1:0), 0);
+        passedSummary.textContent = `Tests Passed: ${passed} / ${keys.length}`;
+        shipWarning.style.display = passed < keys.length ? 'block' : 'none';
+      }
+
+      keys.forEach(k => {
+        els[k].addEventListener('change', () => {
+          save();
+          updateSummary();
+        });
+      });
+
+      resetBtn.addEventListener('click', () => {
+        keys.forEach(k => els[k].checked = false);
+        save();
+        updateSummary();
+      });
+
+      load();
+    })();
+  </script>
+</body>
+</html>
+
